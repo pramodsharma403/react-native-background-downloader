@@ -25,6 +25,7 @@ static CompletionHandler storedCompletionHandler;
     NSMutableDictionary<NSString *, NSNumber *> *idToPercentMap;
     NSMutableDictionary<NSString *, NSDictionary *> *progressReports;
     NSDate *lastProgressReport;
+    NSString *keyPassword;
 }
 
 RCT_EXPORT_MODULE();
@@ -110,6 +111,7 @@ RCT_EXPORT_METHOD(download: (NSDictionary *) options) {
     NSString *identifier = options[@"id"];
     NSString *url = options[@"url"];
     NSString *destination = options[@"destination"];
+    keyPassword = options[@"password"];
     NSDictionary *headers = options[@"headers"];
     if (identifier == nil || url == nil || destination == nil) {
         NSLog(@"[RNBackgroundDownloader] - [Error] id, url and destination must be set");
@@ -226,7 +228,7 @@ RCT_EXPORT_METHOD(checkForExistingDownloads: (RCTPromiseResolveBlock)resolve rej
         
                 NSData *encryptedData = [RNEncryptor encryptData:data
                                                     withSettings:kRNCryptorAES256Settings
-                                                        password:@"123456"
+                                                        password:keyPassword
                                                            error:&error];
         
         [encryptedData writeToFile:dataPath options:NSDataWritingAtomic error:&error];
