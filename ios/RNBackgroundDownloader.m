@@ -8,6 +8,9 @@
 //
 #import "RNBackgroundDownloader.h"
 #import "RNBGDTaskConfig.h"
+#import <RNCryptor-objc/RNEncryptor.h>
+#import <RNCryptor-objc/RNDecryptor.h>
+
 
 #define ID_TO_CONFIG_MAP_KEY @"com.eko.bgdownloadidmap"
 
@@ -199,10 +202,39 @@ RCT_EXPORT_METHOD(checkForExistingDownloads: (RCTPromiseResolveBlock)resolve rej
         NSURL *destURL = [NSURL fileURLWithPath:taskCofig.destination];
         [fileManager createDirectoryAtURL:[destURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
         [fileManager removeItemAtURL:destURL error:nil];
+                NSError *error;
         NSError *moveError;
-        BOOL moved = [fileManager moveItemAtURL:location toURL:destURL error:&moveError];
+
+
+        
+        // Generate the file path
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[destURL.absoluteString lastPathComponent]];
+
+        
+        
+        
+        NSData *data = [NSData dataWithContentsOfFile:location.absoluteString];
+//
+//        NSData *decryptedData = [RNDecryptor decryptData:encryptedData
+//                                            withPassword:@"123456"
+//                                                   error:&error];
+//
+//        [decryptedData writeToFile:dataPath atomically:YES];
+
+        
+                NSData *encryptedData = [RNEncryptor encryptData:data
+                                                    withSettings:kRNCryptorAES256Settings
+                                                        password:@"123456"
+                                                           error:&error];
+        
+        [encryptedData writeToFile:dataPath options:NSDataWritingAtomic error:&error];
+        BOOL removed = [fileManager removeItemAtPath:dataPath error:&error];
+
+
         if (self.bridge) {
-            if (moved) {
+            if (removed) {
                 [self sendEventWithName:@"downloadComplete" body:@{@"id": taskCofig.id}];
             } else {
                 [self sendEventWithName:@"downloadFailed" body:@{@"id": taskCofig.id, @"error": [moveError localizedDescription]}];
